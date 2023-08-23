@@ -1,0 +1,32 @@
+def build_3D_tensor(p, b, h):
+    # p - close prices, b - Barrier levels, h - max Horizon
+    
+    tensor = np.full((len(p)-h, len(b), len(b)), 0, dtype=float)
+    tensor_b = np.full((len(p)-h, len(b), len(b)), 0, dtype=float)
+
+    for n in range(len(p)-h): #which 'honeycomb'
+        for i in range(len(b)): 
+            for j in range(len(b)): #which TPSL
+                for x in range(1, h+1): #iteration for all horizon
+                    hit = False
+                    if n + x < len(p): #if we are still in Horizon
+                        # lower barrier hit
+                        if p['close'][n + x] < p['ask_close'][n] - b[j]: #our profit
+                            tensor[n, i, j] = -1 #accuracy tensor
+                            tensor_b[n, i, j] = -b[j] #profit tensor
+                            hit = True
+                            break
+                        # upper barrier hit
+                        elif p['close'][n + x] >= p['ask_close'][n] + b[i]:
+                            tensor[n, i, j] = 1
+                            tensor_b[n, i, j] = b[i]
+                            hit = True
+                            break
+                # in case no barrier was hit, use price difference
+                if hit == False:
+                    tensor_b[n, i, j] = p['close'][n + x] - p['ask_close'][n]
+                            
+        if n%10000 == 0 and n > 0: #to control iteration
+            print(n)
+
+    return tensor, tensor_b
